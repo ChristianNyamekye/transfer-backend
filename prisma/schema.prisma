@@ -1,0 +1,268 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profile
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  phone             String?   @unique
+  password          String
+  firstName         String?
+  lastName          String?
+  isEmailVerified   Boolean   @default(false)
+  isPhoneVerified   Boolean   @default(false)
+  kycStatus         KycStatus @default(PENDING)
+  profilePicture    String?
+  dateOfBirth       DateTime?
+  address           String?
+  city              String?
+  country           String?
+  postalCode        String?
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+  
+  // Relations
+  sessions          UserSession[]
+  wallets           Wallet[]
+  transactions      Transaction[]
+  kycDocuments      KycDocument[]
+  
+  @@map("users")
+}
+
+// User session management for JWT tokens
+model UserSession {
+  id           String    @id @default(cuid())
+  userId       String
+  refreshToken String    @unique
+  deviceInfo   String?
+  ipAddress    String?
+  isActive     Boolean   @default(true)
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  
+  // Relations
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_sessions")
+}
+
+// Multi-currency wallet system
+model Wallet {
+  id               String            @id @default(cuid())
+  userId           String
+  currency         Currency
+  balance          Decimal           @default(0)
+  availableBalance Decimal           @default(0)
+  reservedBalance  Decimal           @default(0)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  
+  // Relations
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions     Transaction[]
+  
+  @@unique([userId, currency])
+  @@map("wallets")
+}
+
+// Transaction records
+model Transaction {
+  id                    String            @id @default(cuid())
+  userId                String
+  walletId              String
+  type                  TransactionType
+  status                TransactionStatus @default(PENDING)
+  
+  // Amount details
+  amount                Decimal
+  currency              Currency
+  fee                   Decimal           @default(0)
+  exchangeRate          Decimal?
+  
+  // Recipient details (for transfers)
+  recipientName         String?
+  recipientEmail        String?
+  recipientPhone        String?
+  recipientBankName     String?
+  recipientAccountNumber String?
+  recipientRoutingNumber String?
+  recipientSwiftCode    String?
+  recipientAddress      String?
+  
+  // Payment method and processing
+  paymentMethod         PaymentMethod?
+  externalTransactionId String?
+  blockchainTxHash      String?
+  
+  // Metadata
+  reference             String            @unique @default(cuid())
+  description           String?
+  metadata              Json?
+  
+  // Timestamps
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  completedAt           DateTime?
+  
+  // Relations
+  user                  User              @relation(fields: [userId], references: [id])
+  wallet                Wallet            @relation(fields: [walletId], references: [id])
+  statusHistory         TransactionStatusHistory[]
+  
+  @@map("transactions")
+}
+
+// Transaction status history for tracking
+model TransactionStatusHistory {
+  id            String            @id @default(cuid())
+  transactionId String
+  status        TransactionStatus
+  message       String?
+  metadata      Json?
+  createdAt     DateTime          @default(now())
+  
+  // Relations
+  transaction   Transaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  
+  @@map("transaction_status_history")
+}
+
+// KYC document storage
+model KycDocument {
+  id           String      @id @default(cuid())
+  userId       String
+  documentType DocumentType
+  fileName     String
+  fileUrl      String
+  fileSize     Int
+  mimeType     String
+  status       KycDocumentStatus @default(PENDING)
+  rejectionReason String?
+  uploadedAt   DateTime    @default(now())
+  reviewedAt   DateTime?
+  
+  // Relations
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("kyc_documents")
+}
+
+// Exchange rates for currency conversion
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  fromCurrency Currency
+  toCurrency   Currency
+  rate      Decimal
+  source    String   @default("api")
+  timestamp DateTime @default(now())
+  
+  @@unique([fromCurrency, toCurrency, timestamp])
+  @@map("exchange_rates")
+}
+
+// Enums
+enum KycStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum Currency {
+  USD
+  NGN
+  KES
+  GHS
+  ZAR
+  GBP
+  EUR
+  CAD
+  AUD
+  JPY
+  CHF
+  CNY
+  INR
+  BRL
+  MXN
+  SGD
+  HKD
+  NZD
+  SEK
+  NOK
+  KRW
+  THB
+  PHP
+  IDR
+  MYR
+  EGP
+  MAD
+  TND
+  ETB
+  UGX
+  TZS
+  XOF
+  XAF
+  RWF
+  MZN
+  AED
+  SAR
+  BWP
+  ZMW
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER_SEND
+  TRANSFER_RECEIVE
+  EXCHANGE
+  FEE
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  MOBILE_MONEY
+  CARD
+  CRYPTO
+  ACH
+  WIRE
+}
+
+enum DocumentType {
+  PASSPORT
+  NATIONAL_ID
+  DRIVERS_LICENSE
+  PROOF_OF_ADDRESS
+  SELFIE
+}
+
+enum KycDocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
