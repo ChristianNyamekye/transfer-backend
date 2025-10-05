@@ -45,12 +45,15 @@ export class TransactionController {
       };
 
       // Transform transactions to match frontend format
-      const formattedTransactions = transactions.map(transaction => {
+      const formattedTransactions = transactions.map((transaction: any) => {
         const amount = parseFloat(transaction.amount.toString());
         const rate = transaction.exchangeRate
           ? parseFloat(transaction.exchangeRate.toString())
           : exchangeRates[transaction.currency];
         const receivedAmount = amount * rate;
+
+        // Use the stored recipient currency from the transaction
+        const recipientCurrency = transaction.recipientCurrency || 'USD';
 
         return {
           id: transaction.id,
@@ -60,7 +63,7 @@ export class TransactionController {
           amount: amount,
           currency: transaction.currency,
           receivedAmount: receivedAmount,
-          receivedCurrency: transaction.type === 'TRANSFER_SEND' ? 'USD' : transaction.currency,
+          receivedCurrency: recipientCurrency,
           status: transaction.status.toLowerCase() as 'completed' | 'processing' | 'failed',
           date: transaction.createdAt.toISOString(),
           country: transaction.type === 'TRANSFER_SEND' ? 'United States' : 'Nigeria', // Mock country
@@ -171,6 +174,7 @@ export class TransactionController {
           recipientRoutingNumber,
           recipientSwiftCode,
           recipientAddress,
+          recipientCurrency: recipientCurrency as any,
           paymentMethod: paymentMethod?.toUpperCase(),
           description: description || `Transfer to ${recipientName}`,
         },
@@ -198,8 +202,7 @@ export class TransactionController {
         },
       });
 
-      // For demo purposes, auto-complete the transaction after a short delay
-      // In production, this would be handled by payment processors/background jobs
+      // Auto-complete transaction for demo purposes
       setTimeout(async () => {
         try {
           // Update transaction to completed
@@ -236,9 +239,9 @@ export class TransactionController {
             });
           }
         } catch (error) {
-          // Handle completion error silently
+          // Ignore completion errors
         }
-      }, 3000); // Complete after 3 seconds
+      }, 3000);
 
       // Return transaction details with fee breakdown
       const response: ApiResponse = {

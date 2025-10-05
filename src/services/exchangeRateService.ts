@@ -280,7 +280,6 @@ export class ExchangeRateService {
         timestamp: new Date(),
       };
     } catch (error) {
-      console.error('Currency conversion error:', error);
       throw new Error('Failed to convert currency');
     }
   }

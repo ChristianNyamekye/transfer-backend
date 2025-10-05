@@ -105,6 +105,7 @@ model Transaction {
   recipientRoutingNumber String?
   recipientSwiftCode    String?
   recipientAddress      String?
+  recipientCurrency     Currency?
   
   // Payment method and processing
   paymentMethod         PaymentMethod?
