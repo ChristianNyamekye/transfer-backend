@@ -31,6 +31,11 @@ model User {
   country           String?
   postalCode        String?
   
+  // Circle API integration
+  circleCustomerId  String?   @unique
+  circleWalletId    String?   @unique
+  circleKycStatus   String?   // Circle KYC status
+  
   // Timestamps
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -71,6 +76,13 @@ model Wallet {
   availableBalance Decimal           @default(0)
   reservedBalance  Decimal           @default(0)
   isActive         Boolean           @default(true)
+  
+  // Circle wallet integration
+  circleWalletId   String?           @unique
+  circleAddress    String?           // Blockchain address
+  circleChain      String?           // Blockchain network (ETH, POLY, etc.)
+  circleStatus     String?           // Circle wallet status
+  
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   
@@ -111,6 +123,10 @@ model Transaction {
   paymentMethod         PaymentMethod?
   externalTransactionId String?
   blockchainTxHash      String?
+  
+  // Circle API integration
+  circleTransferId      String?   @unique
+  circleStatus          String?   // Circle transfer status
   
   // Metadata
   reference             String            @unique @default(cuid())

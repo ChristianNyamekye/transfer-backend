@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ApiResponse } from '@/types/common';
 import prisma from '@/lib/database';
 import { ExchangeRateService } from '@/services/exchangeRateService';
+import { WalletService } from '@/services/walletService';
 
 export class WalletController {
   // Get user wallets in the format expected by frontend
@@ -201,16 +202,12 @@ export class WalletController {
         return;
       }
 
-      // Create new wallet
-      const wallet = await prisma.wallet.create({
-        data: {
-          userId: req.user.id,
-          currency: currency,
-          balance: 0,
-          availableBalance: 0,
-          reservedBalance: 0,
-        },
-      });
+      // Create new wallet with Circle integration
+      const wallet = await WalletService.createWalletWithCircle(
+        req.user.id,
+        currency,
+        'ETH', // Default to Ethereum blockchain
+      );
 
       const response: ApiResponse = {
         success: true,

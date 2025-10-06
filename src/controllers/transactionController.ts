@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ApiResponse } from '@/types/common';
 import prisma from '@/lib/database';
 import { ExchangeRateService } from '@/services/exchangeRateService';
+import circleService from '@/services/circleService';
 
 export class TransactionController {
   // Get user transactions in the format expected by frontend
@@ -202,46 +203,46 @@ export class TransactionController {
         },
       });
 
-      // Auto-complete transaction for demo purposes
-      setTimeout(async () => {
-        try {
-          // Update transaction to completed
-          await prisma.transaction.update({
-            where: { id: transaction.id },
-            data: {
-              status: 'COMPLETED',
-              completedAt: new Date(),
-            },
-          });
+      // Process through Circle Gateway for instant settlement (if user has Gateway initialized)
+      let gatewayTransferId = null;
+      if (req.user.circleCustomerId) {
+        // Create Gateway transfer for instant settlement
+        // This converts: sourceWallet → USDC → recipientCurrency instantly
+        const gatewayTransfer = await circleService.createGatewayTransfer({
+          source: {
+            address: `user_${req.user.id}_${sourceWallet}`, // Mock address for demo
+            chain: 'ETH', // Default to Ethereum
+          },
+          destination: {
+            address: `recipient_${recipientCurrency}`, // Mock recipient address
+            chain: 'ETH',
+          },
+          amount: amount.toString(),
+        });
 
-          // Add completion status
-          await prisma.transactionStatusHistory.create({
-            data: {
-              transactionId: transaction.id,
-              status: 'COMPLETED',
-              message: 'Transfer completed successfully',
-            },
-          });
+        gatewayTransferId = gatewayTransfer.id;
 
-          // Move reserved funds to completed (deduct from balance and reserved)
-          const wallet = await prisma.wallet.findUnique({ where: { id: transaction.walletId } });
-          if (wallet) {
-            await prisma.wallet.update({
-              where: { id: wallet.id },
-              data: {
-                balance: {
-                  decrement: totalDeduction,
-                },
-                reservedBalance: {
-                  decrement: totalDeduction,
-                },
-              },
-            });
-          }
-        } catch (error) {
-          // Ignore completion errors
-        }
-      }, 3000);
+        // Update transaction with Gateway details
+        await prisma.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            circleTransferId: gatewayTransferId,
+            circleStatus: 'GATEWAY_PROCESSING',
+          },
+        });
+
+        // Add Gateway processing status
+        await prisma.transactionStatusHistory.create({
+          data: {
+            transactionId: transaction.id,
+            status: 'PROCESSING',
+            message: 'Processing instant settlement',
+          },
+        });
+      }
+
+      // Transaction completion now handled by Circle webhooks
+      // No more demo auto-completion - real-time updates via webhooks
 
       // Return transaction details with fee breakdown
       const response: ApiResponse = {

@@ -16,6 +16,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@circle-fin/circle-sdk": "^2.9.0",
+    "@circle-fin/developer-controlled-wallets": "^8.4.1",
     "@prisma/client": "^6.16.2",
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
@@ -27,7 +29,8 @@
     "joi": "^18.0.1",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
-    "prisma": "^6.16.2"
+    "prisma": "^6.16.2",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

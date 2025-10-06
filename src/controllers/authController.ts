@@ -6,6 +6,8 @@ import { generateTokens } from '@/middleware/auth';
 import config from '@/config';
 import prisma from '@/lib/database';
 import { AppError } from '@/middleware/errorHandler';
+import circleService from '@/services/circleService';
+import { WalletService } from '@/services/walletService';
 
 export class AuthController {
   // User registration
@@ -73,42 +75,72 @@ export class AuthController {
         },
       });
 
-      // Create empty default wallets for core supported currencies
+      // Create Circle customer for instant settlement capabilities
+      let circleCustomerId = null;
+      let circleKycStatus = 'not_initialized';
+
+      try {
+        const circleUser = await circleService.createUser(user.id);
+        circleCustomerId = user.id; // Use our user ID as Circle user ID
+        circleKycStatus = 'gateway_ready';
+
+        console.log('Circle customer created successfully for user:', user.id);
+      } catch (circleError) {
+        console.error('Failed to create Circle customer:', circleError);
+        // Continue with registration even if Circle customer creation fails
+        // User can initialize Gateway later via the dashboard
+      }
+
+      // Update user with Circle customer information
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          circleCustomerId,
+          circleKycStatus,
+        },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          firstName: true,
+          lastName: true,
+          isEmailVerified: true,
+          isPhoneVerified: true,
+          kycStatus: true,
+          profilePicture: true,
+          circleCustomerId: true,
+          circleKycStatus: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      // Create default wallets with Circle integration for core supported currencies
       const currencies = ['GHS', 'NGN', 'USD']; // Start with GHS, NGN and USD
 
       await Promise.all(
-        currencies.map(currency =>
-          prisma.wallet.create({
-            data: {
-              userId: user.id,
-              currency: currency as any,
-              balance: 0,
-              availableBalance: 0,
-              reservedBalance: 0,
-            },
-          }),
-        ),
+        currencies.map(currency => WalletService.createWalletWithCircle(user.id, currency, 'ETH')),
       );
 
       // Transform user data to match frontend expectations
       const transformedUser = {
-        id: user.id,
-        email: user.email,
+        id: updatedUser.id,
+        email: updatedUser.email,
         name:
-          user.firstName && user.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : user.firstName || user.email.split('@')[0],
-        phone: user.phone,
+          updatedUser.firstName && updatedUser.lastName
+            ? `${updatedUser.firstName} ${updatedUser.lastName}`
+            : updatedUser.firstName || updatedUser.email.split('@')[0],
+        phone: updatedUser.phone,
         kycStatus:
-          user.kycStatus === 'PENDING'
+          updatedUser.kycStatus === 'PENDING'
             ? ('not-started' as const)
-            : user.kycStatus === 'IN_REVIEW'
+            : updatedUser.kycStatus === 'IN_REVIEW'
               ? ('pending' as const)
-              : user.kycStatus === 'APPROVED'
+              : updatedUser.kycStatus === 'APPROVED'
                 ? ('verified' as const)
                 : ('rejected' as const),
-        profileImage: user.profilePicture,
-        createdAt: user.createdAt.toISOString(),
+        profileImage: updatedUser.profilePicture,
+        createdAt: updatedUser.createdAt.toISOString(),
       };
 
       const loginResponse: LoginResponse = {
@@ -359,7 +391,7 @@ export class AuthController {
           const info = currencyInfo[wallet.currency];
 
           return {
-            flag: info?.flag || '🏳️',
+            flag: info?.flag || '',
             currency: wallet.currency,
             currencyName: info?.name || wallet.currency,
             symbol: info?.symbol || wallet.currency,

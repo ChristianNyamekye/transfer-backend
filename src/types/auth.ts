@@ -9,6 +9,11 @@ export interface User {
   kycStatus: 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED';
   createdAt: Date;
   updatedAt: Date;
+
+  // Circle API fields
+  circleCustomerId?: string | null;
+  circleWalletId?: string | null;
+  circleKycStatus?: string | null;
 }
 
 export interface CreateUserRequest {

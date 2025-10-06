@@ -30,6 +30,18 @@ interface Config {
   FLUTTERWAVE_SECRET_KEY?: string;
   PAYSTACK_SECRET_KEY?: string;
 
+  // Circle API
+  CIRCLE_API_KEY?: string;
+  CIRCLE_BASE_URL?: string;
+  CIRCLE_ENVIRONMENT?: string;
+  CIRCLE_GATEWAY_ENABLED?: boolean;
+  CIRCLE_WEBHOOK_SECRET?: string;
+
+  // Circle Wallet Configuration
+  CIRCLE_ENTITY_SECRET?: string;
+  CIRCLE_ENTITY_SECRET_ID?: string;
+  CIRCLE_WALLET_SET_ID?: string;
+
   // Blockchain
   ETHEREUM_RPC_URL?: string;
   POLYGON_RPC_URL?: string;
@@ -74,6 +86,18 @@ const config: Config = {
   CURRENCY_API_KEY: process.env.CURRENCY_API_KEY,
   FLUTTERWAVE_SECRET_KEY: process.env.FLUTTERWAVE_SECRET_KEY,
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
+
+  // Circle API
+  CIRCLE_API_KEY: process.env.CIRCLE_API_KEY,
+  CIRCLE_BASE_URL: process.env.CIRCLE_BASE_URL || 'https://api.circle.com',
+  CIRCLE_ENVIRONMENT: process.env.CIRCLE_ENVIRONMENT || 'sandbox',
+  CIRCLE_GATEWAY_ENABLED: process.env.CIRCLE_GATEWAY_ENABLED === 'true',
+  CIRCLE_WEBHOOK_SECRET: process.env.CIRCLE_WEBHOOK_SECRET,
+
+  // Circle Wallet Configuration
+  CIRCLE_ENTITY_SECRET: process.env.CIRCLE_ENTITY_SECRET,
+  CIRCLE_ENTITY_SECRET_ID: process.env.CIRCLE_ENTITY_SECRET_ID,
+  CIRCLE_WALLET_SET_ID: process.env.CIRCLE_WALLET_SET_ID,
 
   // Blockchain
   ETHEREUM_RPC_URL: process.env.ETHEREUM_RPC_URL,

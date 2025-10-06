@@ -288,7 +288,7 @@ export class ExchangeRateService {
   static getCurrencyInfo(currencyCode: string): CurrencyInfo {
     return (
       this.CURRENCY_INFO[currencyCode] || {
-        flag: '🏳️',
+        flag: '',
         symbol: currencyCode,
         name: currencyCode,
         country: 'Unknown',
