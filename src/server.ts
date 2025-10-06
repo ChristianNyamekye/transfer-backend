@@ -12,6 +12,7 @@ import transactionRoutes from '@/routes/transaction';
 import exchangeRateRoutes from '@/routes/exchangeRate';
 import circleRoutes from '@/routes/circle';
 import webhookRoutes from '@/routes/webhook';
+import bridgeRoutes from '@/routes/bridge';
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use(`${config.API_PREFIX}/transactions`, transactionRoutes);
 app.use(`${config.API_PREFIX}/exchange-rates`, exchangeRateRoutes);
 app.use(`${config.API_PREFIX}/circle`, circleRoutes);
 app.use(`${config.API_PREFIX}/webhooks`, webhookRoutes);
+app.use(`${config.API_PREFIX}/bridge`, bridgeRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFound);

@@ -204,6 +204,7 @@ enum KycStatus {
 
 enum Currency {
   USD
+  USDC  // USD Coin for bridge liquidity
   NGN
   KES
   GHS

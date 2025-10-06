@@ -3,6 +3,11 @@ import { ApiResponse } from '@/types/common';
 import prisma from '@/lib/database';
 import { ExchangeRateService } from '@/services/exchangeRateService';
 import circleService from '@/services/circleService';
+import config from '@/config';
+
+// TEMPORARY DEVELOPMENT WEBHOOK SIMULATOR
+// TODO: Remove development webhook simulator before production deployment
+// Search for "DEVELOPMENT ONLY" and "TEMPORARY" comments to find code to remove
 
 export class TransactionController {
   // Get user transactions in the format expected by frontend
@@ -241,8 +246,36 @@ export class TransactionController {
         });
       }
 
-      // Transaction completion now handled by Circle webhooks
-      // No more demo auto-completion - real-time updates via webhooks
+      // Transaction completion handled by Circle webhooks
+      // TEMPORARY: Development webhook simulator (remove when deploying to production)
+      if (config.NODE_ENV === 'development') {
+        setTimeout(async () => {
+          try {
+            console.log(
+              'DEVELOPMENT ONLY: Simulating Circle webhook for transaction:',
+              transaction.id,
+            );
+
+            // Simulate Circle webhook completion
+            const { WebhookController } = require('@/controllers/webhookController');
+            const mockWebhookEvent = {
+              type: 'transaction.completed',
+              id: `dev-webhook-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              data: {
+                id: gatewayTransferId || `mock-${transaction.id}`,
+                status: 'completed',
+                txHash: `0x${Math.random().toString(16).slice(2, 18)}dev`,
+              },
+            };
+
+            // Process the webhook event
+            await WebhookController.handleTransactionCompleted(mockWebhookEvent);
+          } catch (error) {
+            console.error('Development webhook simulation failed:', error);
+          }
+        }, 2000); // 2 second delay for development testing
+      }
 
       // Return transaction details with fee breakdown
       const response: ApiResponse = {

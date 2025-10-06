@@ -30,20 +30,29 @@ export class WebhookController {
 
       // Handle different webhook event types
       switch (event.type) {
-        case 'transfer.created':
-          await WebhookController.handleTransferCreated(event);
+        case 'transactions.created':
+        case 'transaction.created':
+          await WebhookController.handleTransactionCreated(event);
           break;
-        case 'transfer.completed':
-          await WebhookController.handleTransferCompleted(event);
+        case 'transactions.confirmed':
+        case 'transaction.confirmed':
+          await WebhookController.handleTransactionConfirmed(event);
           break;
-        case 'transfer.failed':
-          await WebhookController.handleTransferFailed(event);
+        case 'transactions.completed':
+        case 'transaction.completed':
+          await WebhookController.handleTransactionCompleted(event);
           break;
+        case 'transactions.failed':
+        case 'transaction.failed':
+          await WebhookController.handleTransactionFailed(event);
+          break;
+        case 'wallets.created':
         case 'wallet.created':
           await WebhookController.handleWalletCreated(event);
           break;
-        case 'balance.updated':
-          await WebhookController.handleBalanceUpdated(event);
+        case 'users.created':
+        case 'user.created':
+          await WebhookController.handleUserCreated(event);
           break;
         default:
           console.log('Unhandled webhook event type:', event.type);
@@ -76,8 +85,8 @@ export class WebhookController {
     }
   }
 
-  // Handle transfer created webhook
-  private static async handleTransferCreated(event: any): Promise<void> {
+  // Handle transaction created webhook
+  private static async handleTransactionCreated(event: any): Promise<void> {
     const transferId = event.data?.id;
     if (!transferId) return;
 
@@ -98,8 +107,30 @@ export class WebhookController {
     }
   }
 
-  // Handle transfer completed webhook
-  private static async handleTransferCompleted(event: any): Promise<void> {
+  // Handle transaction confirmed webhook (intermediate state)
+  private static async handleTransactionConfirmed(event: any): Promise<void> {
+    const transferId = event.data?.id;
+    if (!transferId) return;
+
+    // Find transaction by Circle transfer ID
+    const transaction = await prisma.transaction.findFirst({
+      where: { circleTransferId: transferId },
+    });
+
+    if (transaction) {
+      // Update transaction status to processing
+      await prisma.transactionStatusHistory.create({
+        data: {
+          transactionId: transaction.id,
+          status: 'PROCESSING',
+          message: 'Transaction confirmed on blockchain',
+        },
+      });
+    }
+  }
+
+  // Handle transaction completed webhook
+  private static async handleTransactionCompleted(event: any): Promise<void> {
     const transferId = event.data?.id;
     if (!transferId) return;
 
@@ -148,8 +179,8 @@ export class WebhookController {
     }
   }
 
-  // Handle transfer failed webhook
-  private static async handleTransferFailed(event: any): Promise<void> {
+  // Handle transaction failed webhook
+  private static async handleTransactionFailed(event: any): Promise<void> {
     const transferId = event.data?.id;
     if (!transferId) return;
 
@@ -203,9 +234,34 @@ export class WebhookController {
     // Handle wallet creation events if needed
   }
 
+  // Handle user created webhook
+  private static async handleUserCreated(event: any): Promise<void> {
+    console.log('Circle user created:', event.data);
+    // Handle user creation events if needed for additional processing
+  }
+
   // Handle balance updated webhook
   private static async handleBalanceUpdated(event: any): Promise<void> {
-    console.log('Circle balance updated:', event.data);
-    // Handle balance update events if needed
+    const walletId = event.data?.walletId;
+    const newBalance = event.data?.balance;
+
+    if (walletId && newBalance) {
+      // Find wallet by Circle wallet ID and update balance
+      const wallet = await prisma.wallet.findFirst({
+        where: { circleWalletId: walletId },
+      });
+
+      if (wallet) {
+        await prisma.wallet.update({
+          where: { id: wallet.id },
+          data: {
+            balance: parseFloat(newBalance),
+            availableBalance: parseFloat(newBalance),
+          },
+        });
+
+        console.log(`Updated wallet balance for ${wallet.currency}:`, newBalance);
+      }
+    }
   }
 }
