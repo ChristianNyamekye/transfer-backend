@@ -46,6 +46,9 @@ model User {
   wallets           Wallet[]
   transactions      Transaction[]
   kycDocuments      KycDocument[]
+  bankAccounts      BankAccount[]
+  onrampTransactions OnrampTransaction[]
+  offrampTransactions OfframpTransaction[]
   
   @@map("users")
 }
@@ -89,9 +92,152 @@ model Wallet {
   // Relations
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions     Transaction[]
+  onrampTransactions OnrampTransaction[]
+  offrampTransactions OfframpTransaction[]
   
   @@unique([userId, currency])
   @@map("wallets")
+}
+
+// Bank account management
+model BankAccount {
+  id                String      @id @default(cuid())
+  userId            String
+  
+  // Bank account details
+  accountNumber     String
+  routingNumber     String?
+  bankName          String
+  accountType       String      // CHECKING, SAVINGS
+  accountHolderName String
+  
+  // Circle integration
+  circleBankId      String?     @unique
+  circleStatus      String?     // PENDING, VERIFIED, FAILED
+  
+  // Verification status
+  isVerified        Boolean     @default(false)
+  verificationMethod String?    // MICRO_DEPOSITS, INSTANT
+  verificationDate  DateTime?
+  
+  // Metadata
+  isActive          Boolean     @default(true)
+  isPrimary         Boolean     @default(false)
+  nickname          String?
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  // Relations
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  onrampTransactions OnrampTransaction[]
+  offrampTransactions OfframpTransaction[]
+  
+  @@map("bank_accounts")
+}
+
+// Onramp transactions (Bank → USDC)
+model OnrampTransaction {
+  id                String      @id @default(cuid())
+  userId            String
+  bankAccountId     String
+  walletId          String      // Target wallet for USDC
+  
+  // Transaction details
+  amount            Decimal
+  currency          String      // Bank account currency
+  usdcAmount        Decimal     // USDC received
+  fee               Decimal     @default(0)
+  exchangeRate      Decimal     @default(1)
+  
+  // Circle integration
+  circleTransferId  String?     @unique
+  circleStatus      String?
+  
+  // Status tracking
+  status            TransactionStatus @default(PENDING)
+  reference         String      @unique @default(cuid())
+  description       String?
+  
+  // Timestamps
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  completedAt       DateTime?
+  
+  // Relations
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccount       BankAccount @relation(fields: [bankAccountId], references: [id])
+  wallet            Wallet      @relation(fields: [walletId], references: [id])
+  statusHistory     OnrampStatusHistory[]
+  
+  @@map("onramp_transactions")
+}
+
+// Offramp transactions (USDC → Bank)
+model OfframpTransaction {
+  id                String      @id @default(cuid())
+  userId            String
+  bankAccountId     String
+  walletId          String      // Source wallet with USDC
+  
+  // Transaction details
+  usdcAmount        Decimal     // USDC sent
+  amount            Decimal     // Amount received in bank currency
+  currency          String      // Bank account currency
+  fee               Decimal     @default(0)
+  exchangeRate      Decimal     @default(1)
+  
+  // Circle integration
+  circleTransferId  String?     @unique
+  circleStatus      String?
+  
+  // Status tracking
+  status            TransactionStatus @default(PENDING)
+  reference         String      @unique @default(cuid())
+  description       String?
+  
+  // Timestamps
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  completedAt       DateTime?
+  
+  // Relations
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccount       BankAccount @relation(fields: [bankAccountId], references: [id])
+  wallet            Wallet      @relation(fields: [walletId], references: [id])
+  statusHistory     OfframpStatusHistory[]
+  
+  @@map("offramp_transactions")
+}
+
+// Status history for onramp transactions
+model OnrampStatusHistory {
+  id              String            @id @default(cuid())
+  transactionId   String
+  status          TransactionStatus
+  message         String
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  
+  // Relations
+  transaction     OnrampTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  
+  @@map("onramp_status_history")
+}
+
+// Status history for offramp transactions
+model OfframpStatusHistory {
+  id              String             @id @default(cuid())
+  transactionId   String
+  status          TransactionStatus
+  message         String
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+  
+  // Relations
+  transaction     OfframpTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  
+  @@map("offramp_status_history")
 }
 
 // Transaction records
