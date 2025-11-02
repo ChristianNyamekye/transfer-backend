@@ -28,8 +28,15 @@ model User {
   dateOfBirth       DateTime?
   address           String?
   city              String?
+  state             String?   // State/Province for KYC
   country           String?
   postalCode        String?
+  gender            String?   // 'male', 'female', 'unknown' for Rampnow KYC
+  sourceOfFunds     String?   // 'salary', 'business', 'savings', etc. for Rampnow KYC
+  expectedAnnualTradeVolume String? // '<10000', '10000-50000', etc. for Rampnow KYC
+  isPoliticallyExposed Boolean @default(false) // PEP status for Rampnow KYC
+  rampnowKycShared Boolean @default(false) // Track if KYC shared with Rampnow via Hosted Mode
+  rampnowCustomerUid String? // Rampnow customer ID after KYC share
   
   // Circle API integration
   circleCustomerId  String?   @unique

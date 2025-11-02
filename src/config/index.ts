@@ -42,6 +42,13 @@ interface Config {
   CIRCLE_ENTITY_SECRET_ID?: string;
   CIRCLE_WALLET_SET_ID?: string;
 
+  // Rampnow
+  RAMPNOW_API_KEY?: string;
+  RAMPNOW_SECRET_KEY?: string; // Secret key for HMAC signature authentication
+  RAMPNOW_BASE_URL?: string;
+  RAMPNOW_API_ENDPOINT?: string; // Optional: Override default endpoint path
+  RAMPNOW_WEBHOOK_SECRET?: string;
+
   // Blockchain
   ETHEREUM_RPC_URL?: string;
   POLYGON_RPC_URL?: string;
@@ -98,6 +105,15 @@ const config: Config = {
   CIRCLE_ENTITY_SECRET: process.env.CIRCLE_ENTITY_SECRET,
   CIRCLE_ENTITY_SECRET_ID: process.env.CIRCLE_ENTITY_SECRET_ID,
   CIRCLE_WALLET_SET_ID: process.env.CIRCLE_WALLET_SET_ID,
+
+  // Rampnow
+  // Production: https://api.rampnow.io
+  // Sandbox: https://api.dev.rampnow.io
+  RAMPNOW_API_KEY: process.env.RAMPNOW_API_KEY,
+  RAMPNOW_SECRET_KEY: process.env.RAMPNOW_SECRET_KEY, // Secret key for HMAC signature
+  RAMPNOW_BASE_URL: process.env.RAMPNOW_BASE_URL || 'https://api.dev.rampnow.io',
+  RAMPNOW_API_ENDPOINT: process.env.RAMPNOW_API_ENDPOINT, // e.g., '/v1/sessions', '/api/v1/onramp', etc.
+  RAMPNOW_WEBHOOK_SECRET: process.env.RAMPNOW_WEBHOOK_SECRET,
 
   // Blockchain
   ETHEREUM_RPC_URL: process.env.ETHEREUM_RPC_URL,
