@@ -27,7 +27,6 @@ interface Config {
 
   // External APIs
   CURRENCY_API_KEY?: string;
-  FLUTTERWAVE_SECRET_KEY?: string;
   PAYSTACK_SECRET_KEY?: string;
 
   // Blockchain
@@ -72,7 +71,6 @@ const config: Config = {
 
   // External APIs
   CURRENCY_API_KEY: process.env.CURRENCY_API_KEY,
-  FLUTTERWAVE_SECRET_KEY: process.env.FLUTTERWAVE_SECRET_KEY,
   PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
 
   // Blockchain
